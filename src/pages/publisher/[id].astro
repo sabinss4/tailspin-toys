@@ -1,0 +1,57 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Layout from '../../layouts/Layout.astro';
+import GameCard from '../../components/GameCard.astro';
+import Card from '../../components/Card.astro';
+import EmptyState from '../../components/EmptyState.astro';
+import Button from '../../components/Button.astro';
+import ArrowLeft from '../../assets/icons/arrow-left.svg';
+import { getDatabase } from '../../lib/db';
+import { getAllPublisherIds, getPublisherById } from '../../lib/games';
+
+export const prerender = true;
+
+export const getStaticPaths = (async () => {
+    const ids = await getAllPublisherIds(getDatabase());
+    return ids.map((id) => ({ params: { id: String(id) } }));
+}) satisfies GetStaticPaths;
+
+const { id } = Astro.params;
+const publisher = await getPublisherById(getDatabase(), Number(id));
+
+if (!publisher) {
+    return Astro.redirect('/404');
+}
+---
+
+<Layout title={`${publisher.name} - Tailspin Toys`}>
+  <div class="py-8">
+    <Card as="section" class="p-6 mb-8" data-testid="publisher-details">
+      <h1 class="text-3xl font-bold text-slate-100 mb-3" data-testid="publisher-title">{publisher.name}</h1>
+      {publisher.description && (
+        <p class="text-slate-400" data-testid="publisher-description">{publisher.description}</p>
+      )}
+    </Card>
+
+    <section aria-labelledby="publisher-games-heading">
+      <h2 id="publisher-games-heading" class="text-2xl font-medium mb-6 text-slate-100">
+        Games by {publisher.name}
+      </h2>
+
+      {publisher.games.length === 0 ? (
+        <EmptyState text="This publisher has no games available at the moment." />
+      ) : (
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="publisher-games-grid">
+          {publisher.games.map((game) => <GameCard game={game} />)}
+        </div>
+      )}
+    </section>
+
+    <div class="mt-8">
+      <Button href="/" size="sm" data-testid="back-publishers-home">
+        <ArrowLeft class="h-5 w-5 mr-2" aria-hidden="true" />
+        Back to all games
+      </Button>
+    </div>
+  </div>
+</Layout>
