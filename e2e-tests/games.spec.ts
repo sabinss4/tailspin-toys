@@ -100,6 +100,21 @@ test.describe('Game Listing and Navigation', () => {
     });
   });
 
+  test('should navigate from a game to its publisher page', async ({ page }) => {
+    await page.goto('/game/1');
+    const publisherLink = page.getByTestId('game-details-publisher');
+    const publisherId = await publisherLink.getAttribute('href');
+
+    await publisherLink.click();
+
+    await expect(page).toHaveURL(publisherId!);
+    await expect(page.getByTestId('publisher-details')).toBeVisible();
+    await expect(page.getByTestId('publisher-title')).not.toBeEmpty();
+    await expect(page.getByTestId('publisher-description')).not.toBeEmpty();
+    await expect(page.getByTestId('publisher-games-grid')).toBeVisible();
+    await expect(page.getByTestId('publisher-games-grid').getByTestId('game-card').first()).toBeVisible();
+  });
+
   test('should be able to navigate back to home from game details', async ({ page }) => {
     await test.step('Navigate to game details page', async () => {
       await page.goto('/game/1');

@@ -1,7 +1,7 @@
 import { eq, asc } from 'drizzle-orm';
 import type { Database } from './db';
 import { games, categories, publishers } from '../../db/schema';
-import type { Game } from '../types/game';
+import type { Game, PublisherDetails } from '../types/game';
 
 const gameSelection = {
     id: games.id,
@@ -60,6 +60,48 @@ export async function getAllGames(db: Database): Promise<Game[]> {
 export async function getAllGameIds(db: Database): Promise<number[]> {
     const rows = await db.select({ id: games.id }).from(games).orderBy(asc(games.title));
     return rows.map((row) => row.id);
+}
+
+/** All publisher ids ordered by name. */
+export async function getAllPublisherIds(db: Database): Promise<number[]> {
+    const rows = await db
+        .select({ id: publishers.id })
+        .from(publishers)
+        .orderBy(asc(publishers.name));
+    return rows.map((row) => row.id);
+}
+
+/** All games published by a publisher, ordered by title. */
+export async function getGamesByPublisher(db: Database, publisherId: number): Promise<Game[]> {
+    const rows = await baseGamesQuery(db)
+        .where(eq(games.publisherId, publisherId))
+        .orderBy(asc(games.title));
+    return rows.map(mapGame);
+}
+
+/** A publisher with its games, or null when it does not exist. */
+export async function getPublisherById(
+    db: Database,
+    publisherId: number,
+): Promise<PublisherDetails | null> {
+    const publisher = await db
+        .select({
+            id: publishers.id,
+            name: publishers.name,
+            description: publishers.description,
+        })
+        .from(publishers)
+        .where(eq(publishers.id, publisherId))
+        .get();
+
+    if (!publisher) {
+        return null;
+    }
+
+    return {
+        ...publisher,
+        games: await getGamesByPublisher(db, publisherId),
+    };
 }
 
 /** A single game by id, or null when it does not exist. */

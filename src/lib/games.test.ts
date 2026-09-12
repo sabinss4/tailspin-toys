@@ -5,7 +5,10 @@ import type { Database } from './db';
 import {
     getAllGames,
     getAllGameIds,
+    getAllPublisherIds,
+    getGamesByPublisher,
     getGameById,
+    getPublisherById,
 } from './games';
 
 async function seedGames(db: Database, count: number): Promise<void> {
@@ -62,5 +65,31 @@ describe('games data-access helpers', () => {
     it('returns null for a non-existent game', async () => {
         await seedGames(db, 2);
         expect(await getGameById(db, 99999)).toBeNull();
+    });
+
+    it('returns a publisher games ordered by title', async () => {
+        await seedGames(db, 3);
+        const [publisherId] = await getAllPublisherIds(db);
+        const publisherGames = await getGamesByPublisher(db, publisherId);
+
+        expect(publisherGames.map((game) => game.title)).toEqual([
+            'Game 01',
+            'Game 02',
+            'Game 03',
+        ]);
+    });
+
+    it('returns publisher details with its games', async () => {
+        await seedGames(db, 2);
+        const [publisherId] = await getAllPublisherIds(db);
+        const publisher = await getPublisherById(db, publisherId);
+
+        expect(publisher?.name).toBe('Pub One');
+        expect(publisher?.description).toBe('pub');
+        expect(publisher?.games).toHaveLength(2);
+    });
+
+    it('returns null for a non-existent publisher', async () => {
+        expect(await getPublisherById(db, 99999)).toBeNull();
     });
 });

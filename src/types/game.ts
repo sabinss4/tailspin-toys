@@ -10,6 +10,12 @@ export interface Publisher {
     name: string;
 }
 
+/** Represents a publisher page and its published games. */
+export interface PublisherDetails extends Publisher {
+    description: string | null;
+    games: Game[];
+}
+
 /** Represents a game category (summary form used in listings). */
 export interface Category {
     id: number;
